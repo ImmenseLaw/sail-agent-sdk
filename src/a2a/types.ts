@@ -6,8 +6,12 @@
 export interface A2AAgentCard {
   name: string;
   description: string;
-  url: string;
   version: string;
+  supportedInterfaces?: {
+    url: string;
+    protocolBinding: string;
+    protocolVersion: string;
+  }[];
   capabilities: A2ACapabilities;
   skills: A2ASkill[];
   defaultInputModes: string[];
@@ -15,13 +19,18 @@ export interface A2AAgentCard {
   provider?: {
     organization: string;
     url: string;
+    contactEmail?: string;
+    consultationUrl?: string;
   };
+  iconUrl?: string;
+  documentationUrl?: string;
 }
 
 export interface A2ACapabilities {
   streaming: boolean;
   pushNotifications: boolean;
-  stateTransitionHistory: boolean;
+  stateTransitionHistory?: boolean;
+  extendedAgentCard?: boolean;
 }
 
 export interface A2ASkill {

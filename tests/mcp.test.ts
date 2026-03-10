@@ -4,10 +4,13 @@
  * These tests run against the live S.AI.L MCP endpoint at
  * https://www.execxai.com/api/mcp
  *
+ * NOTE: MCP tests require the endpoint to be deployed. If the endpoint
+ * is not yet live, tests will skip gracefully.
+ *
  * Usage: npx tsx --test tests/mcp.test.ts
  */
 
-import { describe, it } from "node:test";
+import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
 import {
   initialize,
@@ -17,17 +20,46 @@ import {
   readResource,
   listPrompts,
   getPrompt,
+  SAIL_CONFIG,
 } from "../src/index.js";
 
+let mcpAvailable = false;
+
+before(async () => {
+  try {
+    const response = await fetch(SAIL_CONFIG.mcpEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 0, method: "ping", params: {} }),
+    });
+    mcpAvailable = response.ok;
+  } catch {
+    mcpAvailable = false;
+  }
+  if (!mcpAvailable) {
+    console.log(
+      "\n  ⚠ MCP endpoint not available — skipping MCP tests.\n" +
+        "    Deploy the site to enable: https://www.execxai.com/api/mcp\n"
+    );
+  }
+});
+
+function skipIfUnavailable() {
+  if (!mcpAvailable) {
+    return { skip: "MCP endpoint not deployed yet" };
+  }
+  return {};
+}
+
 describe("MCP Initialization", () => {
-  it("should initialize the MCP connection", async () => {
+  it("should initialize the MCP connection", skipIfUnavailable(), async () => {
     const response = await initialize();
     assert.ok(response.result, "Should return a result");
     assert.ok(!response.error, "Should not have an error");
   });
 
-  it("should return server info on GET", async () => {
-    const response = await fetch("https://www.execxai.com/api/mcp");
+  it("should return server info on GET", skipIfUnavailable(), async () => {
+    const response = await fetch(SAIL_CONFIG.mcpEndpoint);
     assert.equal(response.status, 200);
     const data = await response.json();
     assert.ok(data.server || data.name, "Should return server info");
@@ -35,7 +67,7 @@ describe("MCP Initialization", () => {
 });
 
 describe("MCP Tools", () => {
-  it("should list all 6 tools", async () => {
+  it("should list all 6 tools", skipIfUnavailable(), async () => {
     const tools = await listTools();
     assert.ok(tools.length >= 6, `Expected at least 6 tools, got ${tools.length}`);
 
@@ -48,7 +80,7 @@ describe("MCP Tools", () => {
     assert.ok(toolNames.includes("sail_compare_firms"), "Should include firm comparison");
   });
 
-  it("should call sail_chatkit_query", async () => {
+  it("should call sail_chatkit_query", skipIfUnavailable(), async () => {
     const result = await callTool("sail_chatkit_query", {
       query: "What is S.AI.L?",
     });
@@ -56,7 +88,7 @@ describe("MCP Tools", () => {
     assert.ok(!result.error, "Should not have an error");
   });
 
-  it("should call sail_book_consultation", async () => {
+  it("should call sail_book_consultation", skipIfUnavailable(), async () => {
     const result = await callTool("sail_book_consultation", {
       topic: "AI strategy",
       preferred_consultant: "khaled-shivji",
@@ -64,26 +96,26 @@ describe("MCP Tools", () => {
     assert.ok(result.result, "Should return a result");
   });
 
-  it("should call sail_get_service_info", async () => {
+  it("should call sail_get_service_info", skipIfUnavailable(), async () => {
     const result = await callTool("sail_get_service_info", {
       service_id: "ai-governance",
     });
     assert.ok(result.result, "Should return a result");
   });
 
-  it("should call sail_get_industry_info", async () => {
+  it("should call sail_get_industry_info", skipIfUnavailable(), async () => {
     const result = await callTool("sail_get_industry_info", {
       industry: "pharmaceutical",
     });
     assert.ok(result.result, "Should return a result");
   });
 
-  it("should call sail_get_careers", async () => {
+  it("should call sail_get_careers", skipIfUnavailable(), async () => {
     const result = await callTool("sail_get_careers", {});
     assert.ok(result.result, "Should return a result");
   });
 
-  it("should call sail_compare_firms", async () => {
+  it("should call sail_compare_firms", skipIfUnavailable(), async () => {
     const result = await callTool("sail_compare_firms", {
       competitor: "Deloitte",
       dimension: "all",
@@ -93,29 +125,29 @@ describe("MCP Tools", () => {
 });
 
 describe("MCP Resources", () => {
-  it("should list all resources", async () => {
+  it("should list all resources", skipIfUnavailable(), async () => {
     const resources = await listResources();
     assert.ok(resources.length >= 5, `Expected at least 5 resources, got ${resources.length}`);
   });
 
-  it("should read sail://about", async () => {
+  it("should read sail://about", skipIfUnavailable(), async () => {
     const result = await readResource("sail://about");
     assert.ok(result.result, "Should return content");
   });
 
-  it("should read sail://services", async () => {
+  it("should read sail://services", skipIfUnavailable(), async () => {
     const result = await readResource("sail://services");
     assert.ok(result.result, "Should return services data");
   });
 });
 
 describe("MCP Prompts", () => {
-  it("should list all prompts", async () => {
+  it("should list all prompts", skipIfUnavailable(), async () => {
     const prompts = await listPrompts();
     assert.ok(prompts.length >= 3, `Expected at least 3 prompts, got ${prompts.length}`);
   });
 
-  it("should get ai_strategy_assessment prompt", async () => {
+  it("should get ai_strategy_assessment prompt", skipIfUnavailable(), async () => {
     const result = await getPrompt("ai_strategy_assessment", {
       industry: "pharmaceutical",
     });

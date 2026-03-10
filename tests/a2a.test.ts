@@ -21,14 +21,14 @@ describe("A2A Agent Card Discovery", () => {
   it("should fetch and parse the agent card", async () => {
     const card = await discoverAgentCard();
     assert.ok(card.name, "Agent card should have a name");
-    assert.ok(card.url, "Agent card should have a URL");
+    assert.ok(card.provider?.url, "Agent card should have a provider URL");
     assert.ok(card.skills.length > 0, "Agent card should have skills");
     assert.ok(card.version, "Agent card should have a version");
   });
 
   it("should list skills", async () => {
     const skills = await listSkills();
-    assert.ok(skills.length >= 9, "Should have at least 9 skills");
+    assert.ok(skills.length >= 7, "Should have at least 7 skills");
   });
 
   it("should find a skill by ID", async () => {

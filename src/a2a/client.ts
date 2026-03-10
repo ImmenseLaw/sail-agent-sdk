@@ -40,7 +40,7 @@ export async function sendMessage(
   const rpcRequest: JsonRpcRequest = {
     jsonrpc: "2.0",
     id: ++requestCounter,
-    method: "message/send",
+    method: "SendMessage",
     params: {
       message: {
         parts,
